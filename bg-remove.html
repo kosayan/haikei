@@ -1,308 +1,422 @@
-import { useState, useRef, useCallback, useEffect } from "react";
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BG REMOVE</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg: #0a0a0a;
+  --surface: #141414;
+  --border: #2a2a2a;
+  --accent: #e8ff00;
+  --text: #f0f0f0;
+  --muted: #555;
+  --mono: 'Courier New', monospace;
+}
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--mono);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 28px 16px;
+  gap: 16px;
+}
+header {
+  width: 100%; max-width: 860px;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 14px;
+  display: flex; align-items: baseline; gap: 14px;
+}
+header h1 { font-size: 20px; font-weight: 700; letter-spacing: 0.12em; color: var(--accent); }
+header span { font-size: 11px; color: var(--muted); }
 
-const MONO = "'Courier New', monospace";
+.layout { width: 100%; max-width: 860px; display: flex; flex-direction: column; gap: 12px; }
 
-const styles = {
-  body: {
-    background: "#0a0a0a", color: "#f0f0f0", fontFamily: MONO,
-    minHeight: "100vh", display: "flex", flexDirection: "column",
-    alignItems: "center", padding: "24px 16px", gap: "14px",
-  },
-  header: {
-    width: "100%", maxWidth: 800,
-    borderBottom: "1px solid #2a2a2a", paddingBottom: 14,
-    display: "flex", alignItems: "baseline", gap: 12,
-  },
-  h1: { fontSize: 18, fontWeight: 700, letterSpacing: "0.12em", color: "#e8ff00", margin: 0 },
-  sub: { fontSize: 11, color: "#555" },
-  layout: { width: "100%", maxWidth: 800, display: "flex", flexDirection: "column", gap: 12 },
-  dropzone: (over) => ({
-    border: `1px dashed ${over ? "#e8ff00" : "#2a2a2a"}`,
-    background: over ? "#1a1a0a" : "#141414",
-    height: 110, display: "flex", flexDirection: "column",
-    alignItems: "center", justifyContent: "center", gap: 8,
-    cursor: "pointer", transition: "all 0.15s", position: "relative",
-  }),
-  ctrlBar: {
-    background: "#141414", border: "1px solid #2a2a2a",
-    padding: "12px 16px", display: "flex", flexDirection: "column", gap: 11,
-  },
-  ctrlRow: { display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" },
-  label: { fontSize: 11, color: "#555", minWidth: 120, whiteSpace: "nowrap" },
-  val: { fontSize: 12, color: "#e8ff00", minWidth: 38, textAlign: "right" },
-  previewWrap: {
-    position: "relative", border: "1px solid #2a2a2a",
-    background: "#111", overflow: "hidden",
-  },
-  checker: {
-    position: "absolute", inset: 0,
-    backgroundImage: `
-      linear-gradient(45deg,#222 25%,transparent 25%),
-      linear-gradient(-45deg,#222 25%,transparent 25%),
-      linear-gradient(45deg,transparent 75%,#222 75%),
-      linear-gradient(-45deg,transparent 75%,#222 75%)`,
-    backgroundSize: "16px 16px",
-    backgroundPosition: "0 0,0 8px,8px -8px,-8px 0",
-  },
-  btn: (primary, disabled) => ({
-    fontFamily: MONO, fontSize: 11, letterSpacing: "0.08em",
-    padding: "9px 18px", border: `1px solid ${primary ? "#e8ff00" : "#2a2a2a"}`,
-    background: primary ? "#e8ff00" : "transparent",
-    color: primary ? "#000" : (disabled ? "#444" : "#f0f0f0"),
-    cursor: disabled ? "not-allowed" : "pointer", fontWeight: primary ? 700 : 400,
-    opacity: disabled ? 0.4 : 1, transition: "opacity 0.1s",
-  }),
-  mbtn: (active) => ({
-    fontFamily: MONO, fontSize: 10, letterSpacing: "0.06em",
-    padding: "5px 10px", border: `1px solid ${active ? "#e8ff00" : "#2a2a2a"}`,
-    background: active ? "#1a1a0a" : "transparent",
-    color: active ? "#e8ff00" : "#555", cursor: "pointer",
-  }),
-  status: { fontSize: 11, color: "#555", minHeight: 16 },
-  hint: { fontSize: 11, color: "#e8ff00", padding: "4px 0" },
-  swatch: (hex) => ({
-    width: 26, height: 26, background: hex,
-    border: "1px solid #444", cursor: "pointer", flexShrink: 0,
-    position: "relative", overflow: "hidden",
-  }),
-  hexText: { fontSize: 12, color: "#e8ff00", letterSpacing: "0.08em", minWidth: 72 },
-};
+/* Drop zone */
+.dropzone {
+  border: 1px dashed var(--border); background: var(--surface);
+  height: 130px; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: 8px;
+  cursor: pointer; transition: border-color 0.15s, background 0.15s; position: relative;
+}
+.dropzone:hover, .dropzone.drag-over { border-color: var(--accent); background: #1a1a0a; }
+.dropzone input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+.dropzone-label { font-size: 12px; color: var(--muted); }
+
+/* Controls */
+.ctrl-bar {
+  background: var(--surface); border: 1px solid var(--border);
+  padding: 12px 16px; display: flex; flex-direction: column; gap: 12px;
+}
+.ctrl-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.ctrl-label { font-size: 11px; color: var(--muted); white-space: nowrap; min-width: 110px; }
+input[type=range] {
+  flex: 1; min-width: 80px;
+  -webkit-appearance: none; appearance: none;
+  height: 2px; background: var(--border); outline: none; cursor: pointer;
+}
+input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance: none; width: 13px; height: 13px; background: var(--accent); cursor: pointer;
+}
+input[type=range]::-moz-range-thumb {
+  width: 13px; height: 13px; background: var(--accent); border: none; cursor: pointer;
+}
+.ctrl-val { font-size: 12px; color: var(--accent); min-width: 36px; text-align: right; }
+
+/* Color picker row */
+.color-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.color-swatch {
+  width: 28px; height: 28px; border: 1px solid var(--border); cursor: pointer;
+  flex-shrink: 0; position: relative;
+}
+.color-swatch input[type=color] {
+  position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%;
+}
+.color-hex {
+  font-size: 12px; color: var(--accent); letter-spacing: 0.08em; min-width: 70px;
+}
+.mode-btns { display: flex; gap: 6px; }
+.mbtn {
+  font-family: var(--mono); font-size: 10px; letter-spacing: 0.06em;
+  padding: 5px 10px; border: 1px solid var(--border);
+  background: transparent; color: var(--muted); cursor: pointer; transition: all 0.1s;
+}
+.mbtn.active { border-color: var(--accent); color: var(--accent); background: #1a1a0a; }
+
+/* Preview */
+.preview-wrap {
+  display: none; position: relative;
+  border: 1px solid var(--border); background: #111; overflow: hidden;
+}
+.preview-wrap.visible { display: block; }
+
+/* Checkerboard bg for transparency preview */
+.checker-bg {
+  position: absolute; inset: 0;
+  background-image:
+    linear-gradient(45deg, #222 25%, transparent 25%),
+    linear-gradient(-45deg, #222 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, #222 75%),
+    linear-gradient(-45deg, transparent 75%, #222 75%);
+  background-size: 16px 16px;
+  background-position: 0 0, 0 8px, 8px -8px, -8px 0px;
+}
+
+#previewCanvas {
+  display: block; width: 100%; height: auto;
+  position: relative;
+}
+
+/* Eyedropper cursor hint */
+.eyedrop-hint {
+  display: none; font-size: 11px; color: var(--accent);
+  padding: 6px 0;
+}
+.eyedrop-hint.visible { display: block; }
+
+.btn-row { display: flex; gap: 8px; }
+.btn {
+  font-family: var(--mono); font-size: 11px; letter-spacing: 0.08em;
+  padding: 10px 18px; border: 1px solid var(--border);
+  background: transparent; color: var(--text); cursor: pointer; transition: all 0.1s;
+}
+.btn:hover { border-color: var(--accent); color: var(--accent); }
+.btn.primary { background: var(--accent); color: #000; border-color: var(--accent); font-weight: 700; }
+.btn.primary:hover { opacity: 0.85; }
+.btn:disabled { opacity: 0.3; cursor: not-allowed; }
+
+.status { font-size: 11px; color: var(--muted); min-height: 16px; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>BG REMOVE</h1>
+  <span>背景透過 / 色距離方式</span>
+</header>
+
+<div class="layout">
+
+  <div class="dropzone" id="dropzone">
+    <input type="file" accept="image/*" id="fileInput">
+    <div style="font-size:26px;opacity:0.3">⊕</div>
+    <div class="dropzone-label">IMAGE DROP / CLICK TO SELECT</div>
+  </div>
+
+  <div class="ctrl-bar">
+    <!-- Color pick -->
+    <div class="ctrl-row">
+      <div class="ctrl-label">BACKGROUND COLOR</div>
+      <div class="color-row">
+        <div class="color-swatch" id="swatchEl">
+          <input type="color" id="colorPicker" value="#000000">
+        </div>
+        <div class="color-hex" id="colorHex">#000000</div>
+        <div class="mode-btns">
+          <button class="mbtn active" id="btnManual" onclick="setPickMode('manual')">MANUAL</button>
+          <button class="mbtn" id="btnEye" onclick="setPickMode('eye')">EYEDROPPER</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Threshold -->
+    <div class="ctrl-row">
+      <div class="ctrl-label">THRESHOLD</div>
+      <input type="range" id="threshold" min="0" max="150" value="30" step="1">
+      <div class="ctrl-val" id="thresholdVal">30</div>
+    </div>
+
+    <!-- Softness (anti-alias zone) -->
+    <div class="ctrl-row">
+      <div class="ctrl-label">SOFTNESS</div>
+      <input type="range" id="softness" min="0" max="60" value="10" step="1">
+      <div class="ctrl-val" id="softnessVal">10</div>
+    </div>
+
+    <!-- Spill suppress -->
+    <div class="ctrl-row">
+      <div class="ctrl-label">SPILL SUPPRESS</div>
+      <input type="range" id="spill" min="0" max="100" value="0" step="1">
+      <div class="ctrl-val" id="spillVal">0</div>
+    </div>
+  </div>
+
+  <div class="eyedrop-hint" id="eyedropHint">▶ 画像をクリックして背景色をピックしてください</div>
+
+  <div class="preview-wrap" id="previewWrap">
+    <div class="checker-bg"></div>
+    <canvas id="previewCanvas"></canvas>
+  </div>
+
+  <div class="status" id="status"></div>
+
+  <div class="btn-row">
+    <button class="btn primary" id="dlBtn" disabled>↓ DOWNLOAD PNG</button>
+  </div>
+
+</div>
+
+<!-- offscreen -->
+<canvas id="srcCanvas" style="display:none"></canvas>
+
+<script>
+let srcImg = null;
+let imgW = 0, imgH = 0;
+let pickMode = 'manual';
+let bgColor = { r: 0, g: 0, b: 0 };
+let renderScheduled = false;
+let lastResult = null; // ImageData
+
+// ---- Load ----
+const dropzone = document.getElementById('dropzone');
+const fileInput = document.getElementById('fileInput');
+
+dropzone.addEventListener('dragover', e => { e.preventDefault(); dropzone.classList.add('drag-over'); });
+dropzone.addEventListener('dragleave', () => dropzone.classList.remove('drag-over'));
+dropzone.addEventListener('drop', e => {
+  e.preventDefault(); dropzone.classList.remove('drag-over');
+  const f = e.dataTransfer.files[0];
+  if (f && f.type.startsWith('image/')) loadImage(f);
+});
+fileInput.addEventListener('change', e => { if (e.target.files[0]) loadImage(e.target.files[0]); });
+
+function loadImage(file) {
+  const reader = new FileReader();
+  reader.onload = ev => {
+    const img = new Image();
+    img.onload = () => {
+      srcImg = img;
+      imgW = img.width; imgH = img.height;
+      const src = document.getElementById('srcCanvas');
+      src.width = imgW; src.height = imgH;
+      src.getContext('2d').drawImage(img, 0, 0);
+
+      const preview = document.getElementById('previewCanvas');
+      preview.width = imgW; preview.height = imgH;
+
+      document.getElementById('previewWrap').classList.add('visible');
+      scheduleRender();
+    };
+    img.src = ev.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+// ---- Color pick ----
+const colorPicker = document.getElementById('colorPicker');
+const swatchEl = document.getElementById('swatchEl');
+const colorHex = document.getElementById('colorHex');
+
+colorPicker.addEventListener('input', () => {
+  const hex = colorPicker.value;
+  bgColor = hexToRgb(hex);
+  updateSwatchDisplay(hex);
+  scheduleRender();
+});
 
 function hexToRgb(hex) {
-  return {
-    r: parseInt(hex.slice(1,3),16),
-    g: parseInt(hex.slice(3,5),16),
-    b: parseInt(hex.slice(5,7),16),
-  };
+  const r = parseInt(hex.slice(1,3),16);
+  const g = parseInt(hex.slice(3,5),16);
+  const b = parseInt(hex.slice(5,7),16);
+  return { r, g, b };
 }
 function rgbToHex(r,g,b) {
-  return "#" + [r,g,b].map(v => v.toString(16).padStart(2,"0")).join("");
+  return '#' + [r,g,b].map(v => v.toString(16).padStart(2,'0')).join('');
+}
+function updateSwatchDisplay(hex) {
+  swatchEl.style.background = hex;
+  colorHex.textContent = hex.toUpperCase();
 }
 
-export default function BgRemove() {
-  const [imgLoaded, setImgLoaded] = useState(false);
-  const [dragOver, setDragOver] = useState(false);
-  const [bgHex, setBgHex] = useState("#000000");
-  const [pickMode, setPickMode] = useState("manual");
-  const [threshold, setThreshold] = useState(30);
-  const [softness, setSoftness] = useState(10);
-  const [spill, setSpill] = useState(0);
-  const [status, setStatus] = useState("");
-  const [hasResult, setHasResult] = useState(false);
+updateSwatchDisplay('#000000');
 
-  const srcCanvasRef = useRef(null);
-  const previewCanvasRef = useRef(null);
-  const fileInputRef = useRef(null);
-  const imgRef = useRef(null);
-  const rafRef = useRef(null);
+function setPickMode(m) {
+  pickMode = m;
+  document.getElementById('btnManual').classList.toggle('active', m === 'manual');
+  document.getElementById('btnEye').classList.toggle('active', m === 'eye');
+  const hint = document.getElementById('eyedropHint');
+  hint.classList.toggle('visible', m === 'eye');
+  const preview = document.getElementById('previewCanvas');
+  preview.style.cursor = m === 'eye' ? 'crosshair' : 'default';
+}
 
-  const processImage = useCallback(() => {
-    const src = srcCanvasRef.current;
-    const preview = previewCanvasRef.current;
-    if (!src || !preview || !imgRef.current) return;
+// Eyedropper on preview canvas — sample from SOURCE image
+document.getElementById('previewCanvas').addEventListener('click', e => {
+  if (pickMode !== 'eye') return;
+  const canvas = e.currentTarget;
+  const rect = canvas.getBoundingClientRect();
+  const s = canvas.getBoundingClientRect().width / imgW;
+  const x = Math.floor((e.clientX - rect.left) / s);
+  const y = Math.floor((e.clientY - rect.top) / s);
 
-    const W = src.width, H = src.height;
-    const t0 = performance.now();
-    setStatus("processing...");
+  const src = document.getElementById('srcCanvas');
+  const ctx = src.getContext('2d');
+  const px = ctx.getImageData(x, y, 1, 1).data;
+  bgColor = { r: px[0], g: px[1], b: px[2] };
+  const hex = rgbToHex(px[0], px[1], px[2]);
+  colorPicker.value = hex;
+  updateSwatchDisplay(hex);
+  setPickMode('manual');
+  scheduleRender();
+});
 
-    // Use setTimeout to let React render "processing..." first
-    setTimeout(() => {
-      const srcCtx = src.getContext("2d");
-      const sd = srcCtx.getImageData(0, 0, W, H).data;
-      const out = new ImageData(W, H);
-      const od = out.data;
+// ---- Sliders ----
+function bindSlider(id, valId, suffix, cb) {
+  const el = document.getElementById(id);
+  const vl = document.getElementById(valId);
+  el.addEventListener('input', () => { vl.textContent = el.value + (suffix||''); cb && cb(); });
+}
+bindSlider('threshold', 'thresholdVal', '', scheduleRender);
+bindSlider('softness', 'softnessVal', '', scheduleRender);
+bindSlider('spill', 'spillVal', '', scheduleRender);
 
-      const { r: br, g: bg, b: bb } = hexToRgb(bgHex);
-      const tLow = threshold;
-      const tHigh = threshold + Math.max(1, softness);
-      const spillAmt = spill / 100;
+// ---- Render (debounced via rAF) ----
+function scheduleRender() {
+  if (!srcImg) return;
+  if (renderScheduled) return;
+  renderScheduled = true;
+  requestAnimationFrame(doRender);
+}
 
-      for (let i = 0; i < sd.length; i += 4) {
-        const r = sd[i], g = sd[i+1], b = sd[i+2], a = sd[i+3];
-        const dist = Math.sqrt((r-br)**2 + (g-bg)**2 + (b-bb)**2);
+function doRender() {
+  renderScheduled = false;
+  const t0 = performance.now();
+  document.getElementById('status').textContent = 'processing...';
 
-        let alpha;
-        if (dist <= tLow) { alpha = 0; }
-        else if (dist >= tHigh) { alpha = a; }
-        else {
-          const t = (dist - tLow) / (tHigh - tLow);
-          alpha = Math.round(t * t * (3 - 2 * t) * a);
-        }
+  const threshold = parseInt(document.getElementById('threshold').value);
+  const softness  = parseInt(document.getElementById('softness').value);
+  const spillAmt  = parseInt(document.getElementById('spill').value) / 100;
 
-        let fr = r, fg = g, fb = b;
-        if (spillAmt > 0 && alpha > 0 && alpha < a) {
-          const blend = spillAmt * (1 - alpha / 255);
-          const lum = 0.299*r + 0.587*g + 0.114*b;
-          fr = Math.round(r + (lum-r)*blend);
-          fg = Math.round(g + (lum-g)*blend);
-          fb = Math.round(b + (lum-b)*blend);
-        }
+  const src = document.getElementById('srcCanvas');
+  const srcCtx = src.getContext('2d');
+  const srcData = srcCtx.getImageData(0, 0, imgW, imgH);
+  const sd = srcData.data;
 
-        od[i] = fr; od[i+1] = fg; od[i+2] = fb; od[i+3] = alpha;
-      }
+  const outData = new ImageData(imgW, imgH);
+  const od = outData.data;
 
-      preview.width = W; preview.height = H;
-      preview.getContext("2d").putImageData(out, 0, 0);
-      setHasResult(true);
-      setStatus(`${W} × ${H}px — ${(performance.now()-t0).toFixed(1)}ms`);
-    }, 10);
-  }, [bgHex, threshold, softness, spill]);
+  const br = bgColor.r, bg = bgColor.g, bb = bgColor.b;
+  const tLow  = threshold;
+  const tHigh = threshold + Math.max(1, softness);
 
-  // Re-process when params change
-  useEffect(() => {
-    if (!imgLoaded) return;
-    if (rafRef.current) cancelAnimationFrame(rafRef.current);
-    rafRef.current = requestAnimationFrame(processImage);
-  }, [imgLoaded, bgHex, threshold, softness, spill, processImage]);
+  for (let i = 0; i < sd.length; i += 4) {
+    const r = sd[i], g = sd[i+1], b = sd[i+2], a = sd[i+3];
 
-  function loadFile(file) {
-    if (!file || !file.type.startsWith("image/")) return;
-    const reader = new FileReader();
-    reader.onload = ev => {
-      const img = new Image();
-      img.onload = () => {
-        imgRef.current = img;
-        const src = srcCanvasRef.current;
-        src.width = img.width; src.height = img.height;
-        src.getContext("2d").drawImage(img, 0, 0);
-        setImgLoaded(true);
-      };
-      img.src = ev.target.result;
-    };
-    reader.readAsDataURL(file);
-  }
+    // Color distance (Euclidean in RGB — fast, no perceptual overhead)
+    const dist = Math.sqrt(
+      (r - br) * (r - br) +
+      (g - bg) * (g - bg) +
+      (b - bb) * (b - bb)
+    );
 
-  function handleDrop(e) {
-    e.preventDefault(); setDragOver(false);
-    loadFile(e.dataTransfer.files[0]);
-  }
-
-  function handlePreviewClick(e) {
-    if (pickMode !== "eye") return;
-    const canvas = previewCanvasRef.current;
-    const src = srcCanvasRef.current;
-    const rect = canvas.getBoundingClientRect();
-    const s = rect.width / src.width;
-    const x = Math.floor((e.clientX - rect.left) / s);
-    const y = Math.floor((e.clientY - rect.top) / s);
-    const px = src.getContext("2d").getImageData(x, y, 1, 1).data;
-    const hex = rgbToHex(px[0], px[1], px[2]);
-    setBgHex(hex);
-    setPickMode("manual");
-  }
-
-  function handleDownload() {
-    const canvas = previewCanvasRef.current;
-    if (!canvas) return;
-    // In Claude artifact: open data URL in new tab
-    const url = canvas.toDataURL("image/png");
-    const w = window.open("about:blank", "_blank");
-    if (w) {
-      w.document.write(`<img src="${url}" style="max-width:100%"><p style="font-family:monospace;font-size:12px;color:#aaa">長押し or 右クリックで保存</p>`);
+    // Alpha: 0 if dist <= tLow, 255 if dist >= tHigh, smooth between
+    let alpha;
+    if (dist <= tLow) {
+      alpha = 0;
+    } else if (dist >= tHigh) {
+      alpha = a; // preserve original alpha
     } else {
-      // fallback: same tab
-      window.location.href = url;
+      // smooth step
+      const t = (dist - tLow) / (tHigh - tLow);
+      alpha = Math.round(t * t * (3 - 2 * t) * a);
     }
+
+    // Spill suppression: desaturate toward neutral for pixels near bg hue
+    let fr = r, fg = g, fb = b;
+    if (spillAmt > 0 && alpha > 0 && alpha < a) {
+      const blend = spillAmt * (1 - alpha / 255);
+      const lum = 0.299 * r + 0.587 * g + 0.114 * b;
+      fr = Math.round(r + (lum - r) * blend);
+      fg = Math.round(g + (lum - g) * blend);
+      fb = Math.round(b + (lum - b) * blend);
+    }
+
+    od[i]   = fr;
+    od[i+1] = fg;
+    od[i+2] = fb;
+    od[i+3] = alpha;
   }
 
-  return (
-    <div style={styles.body}>
-      <header style={styles.header}>
-        <h1 style={styles.h1}>BG REMOVE</h1>
-        <span style={styles.sub}>背景透過 / 色距離方式</span>
-      </header>
+  lastResult = outData;
 
-      <div style={styles.layout}>
-        {/* Drop zone */}
-        <div
-          style={styles.dropzone(dragOver)}
-          onDragOver={e => { e.preventDefault(); setDragOver(true); }}
-          onDragLeave={() => setDragOver(false)}
-          onDrop={handleDrop}
-          onClick={() => fileInputRef.current?.click()}
-        >
-          <input ref={fileInputRef} type="file" accept="image/*" style={{ display:"none" }}
-            onChange={e => loadFile(e.target.files[0])} />
-          <div style={{ fontSize:24, opacity:0.3 }}>⊕</div>
-          <div style={{ fontSize:12, color:"#555" }}>
-            {imgLoaded ? "✓ 画像読込済み（クリックで変更）" : "IMAGE DROP / CLICK TO SELECT"}
-          </div>
-        </div>
+  const preview = document.getElementById('previewCanvas');
+  preview.getContext('2d').putImageData(outData, 0, 0);
 
-        {/* Controls */}
-        <div style={styles.ctrlBar}>
-          {/* BG color */}
-          <div style={styles.ctrlRow}>
-            <div style={styles.label}>BACKGROUND COLOR</div>
-            <div style={styles.swatch(bgHex)} onClick={() => document.getElementById("colorPickerHidden").click()}>
-              <input id="colorPickerHidden" type="color" value={bgHex}
-                style={{ position:"absolute", inset:0, opacity:0, cursor:"pointer", width:"100%", height:"100%" }}
-                onChange={e => setBgHex(e.target.value)} />
-            </div>
-            <div style={styles.hexText}>{bgHex.toUpperCase()}</div>
-            <div style={{ display:"flex", gap:6 }}>
-              <button style={styles.mbtn(pickMode==="manual")} onClick={() => setPickMode("manual")}>MANUAL</button>
-              <button style={styles.mbtn(pickMode==="eye")} onClick={() => setPickMode("eye")}>EYEDROPPER</button>
-            </div>
-          </div>
-
-          {/* Threshold */}
-          <div style={styles.ctrlRow}>
-            <div style={styles.label}>THRESHOLD</div>
-            <input type="range" min={0} max={150} value={threshold}
-              style={{ flex:1 }} onChange={e => setThreshold(+e.target.value)} />
-            <div style={styles.val}>{threshold}</div>
-          </div>
-
-          {/* Softness */}
-          <div style={styles.ctrlRow}>
-            <div style={styles.label}>SOFTNESS</div>
-            <input type="range" min={0} max={60} value={softness}
-              style={{ flex:1 }} onChange={e => setSoftness(+e.target.value)} />
-            <div style={styles.val}>{softness}</div>
-          </div>
-
-          {/* Spill */}
-          <div style={styles.ctrlRow}>
-            <div style={styles.label}>SPILL SUPPRESS</div>
-            <input type="range" min={0} max={100} value={spill}
-              style={{ flex:1 }} onChange={e => setSpill(+e.target.value)} />
-            <div style={styles.val}>{spill}</div>
-          </div>
-        </div>
-
-        {pickMode === "eye" && imgLoaded && (
-          <div style={styles.hint}>▶ 画像をクリックして背景色をピック</div>
-        )}
-
-        {/* Preview */}
-        {imgLoaded && (
-          <div style={styles.previewWrap}>
-            <div style={styles.checker} />
-            <canvas ref={previewCanvasRef}
-              style={{ display:"block", width:"100%", height:"auto", position:"relative",
-                cursor: pickMode==="eye" ? "crosshair" : "default" }}
-              onClick={handlePreviewClick} />
-          </div>
-        )}
-
-        <div style={styles.status}>{status}</div>
-
-        <div style={{ display:"flex", gap:8 }}>
-          <button style={styles.btn(true, !hasResult)} disabled={!hasResult} onClick={handleDownload}>
-            ↓ SAVE IMAGE
-          </button>
-        </div>
-
-        {hasResult && (
-          <div style={{ fontSize:11, color:"#555", lineHeight:1.6 }}>
-            ↑ ボタンを押すと別タブで画像が開きます。長押し or 右クリックで保存してください。
-          </div>
-        )}
-      </div>
-
-      {/* Offscreen src canvas */}
-      <canvas ref={srcCanvasRef} style={{ display:"none" }} />
-    </div>
-  );
+  document.getElementById('dlBtn').disabled = false;
+  const ms = (performance.now() - t0).toFixed(1);
+  document.getElementById('status').textContent =
+    `${imgW} × ${imgH}px — ${ms}ms`;
 }
+
+// ---- Download ----
+document.getElementById('dlBtn').addEventListener('click', () => {
+  if (!lastResult) return;
+  const out = document.createElement('canvas');
+  out.width = imgW; out.height = imgH;
+  out.getContext('2d').putImageData(lastResult, 0, 0);
+
+  // iOS Safari doesn't support a.click() download — open as image in new tab
+  // User can then long-press → Save Image
+  out.toBlob(blob => {
+    const url = URL.createObjectURL(blob);
+    const win = window.open(url, '_blank');
+    // Fallback if popup blocked
+    if (!win) {
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'removed-bg.png';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    }
+    setTimeout(() => URL.revokeObjectURL(url), 60000);
+  }, 'image/png');
+});
+</script>
+</body>
+</html>
