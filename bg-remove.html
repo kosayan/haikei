@@ -3,420 +3,312 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>BG REMOVE</title>
+<title>塗りつぶし透過ツール</title>
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
-:root {
-  --bg: #0a0a0a;
-  --surface: #141414;
-  --border: #2a2a2a;
-  --accent: #e8ff00;
-  --text: #f0f0f0;
-  --muted: #555;
-  --mono: 'Courier New', monospace;
-}
 body {
-  background: var(--bg);
-  color: var(--text);
-  font-family: var(--mono);
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 28px 16px;
-  gap: 16px;
+  background: #0a0a0a; color: #f0f0f0;
+  font-family: 'Courier New', monospace;
+  min-height: 100vh; display: flex; flex-direction: column;
+  align-items: center; padding: 24px 16px; gap: 14px;
 }
 header {
   width: 100%; max-width: 860px;
-  border-bottom: 1px solid var(--border);
-  padding-bottom: 14px;
-  display: flex; align-items: baseline; gap: 14px;
+  border-bottom: 1px solid #222; padding-bottom: 12px;
+  display: flex; align-items: baseline; gap: 12px;
 }
-header h1 { font-size: 20px; font-weight: 700; letter-spacing: 0.12em; color: var(--accent); }
-header span { font-size: 11px; color: var(--muted); }
-
-.layout { width: 100%; max-width: 860px; display: flex; flex-direction: column; gap: 12px; }
-
-/* Drop zone */
-.dropzone {
-  border: 1px dashed var(--border); background: var(--surface);
-  height: 130px; display: flex; flex-direction: column;
-  align-items: center; justify-content: center; gap: 8px;
-  cursor: pointer; transition: border-color 0.15s, background 0.15s; position: relative;
+h1 { font-size: 18px; font-weight: 700; color: #e8ff00; letter-spacing: 0.1em; }
+.sub { font-size: 11px; color: #555; }
+.wrap { width: 100%; max-width: 860px; display: flex; flex-direction: column; gap: 12px; }
+.drop {
+  border: 1px dashed #333; background: #141414;
+  height: 100px; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: 6px;
+  cursor: pointer; position: relative;
 }
-.dropzone:hover, .dropzone.drag-over { border-color: var(--accent); background: #1a1a0a; }
-.dropzone input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
-.dropzone-label { font-size: 12px; color: var(--muted); }
-
-/* Controls */
-.ctrl-bar {
-  background: var(--surface); border: 1px solid var(--border);
-  padding: 12px 16px; display: flex; flex-direction: column; gap: 12px;
+.drop input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+.drop p { font-size: 12px; color: #555; }
+.ctrls {
+  background: #141414; border: 1px solid #222;
+  padding: 12px 16px; display: flex; flex-direction: column; gap: 10px;
 }
-.ctrl-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
-.ctrl-label { font-size: 11px; color: var(--muted); white-space: nowrap; min-width: 110px; }
+.row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.lbl { font-size: 11px; color: #555; min-width: 80px; }
 input[type=range] {
-  flex: 1; min-width: 80px;
+  flex: 1; min-width: 80px; height: 2px;
   -webkit-appearance: none; appearance: none;
-  height: 2px; background: var(--border); outline: none; cursor: pointer;
+  background: #333; outline: none; cursor: pointer;
 }
 input[type=range]::-webkit-slider-thumb {
-  -webkit-appearance: none; width: 13px; height: 13px; background: var(--accent); cursor: pointer;
+  -webkit-appearance: none; width: 14px; height: 14px; background: #e8ff00; cursor: pointer;
 }
-input[type=range]::-moz-range-thumb {
-  width: 13px; height: 13px; background: var(--accent); border: none; cursor: pointer;
-}
-.ctrl-val { font-size: 12px; color: var(--accent); min-width: 36px; text-align: right; }
-
-/* Color picker row */
-.color-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
-.color-swatch {
-  width: 28px; height: 28px; border: 1px solid var(--border); cursor: pointer;
-  flex-shrink: 0; position: relative;
-}
-.color-swatch input[type=color] {
-  position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%;
-}
-.color-hex {
-  font-size: 12px; color: var(--accent); letter-spacing: 0.08em; min-width: 70px;
-}
-.mode-btns { display: flex; gap: 6px; }
-.mbtn {
-  font-family: var(--mono); font-size: 10px; letter-spacing: 0.06em;
-  padding: 5px 10px; border: 1px solid var(--border);
-  background: transparent; color: var(--muted); cursor: pointer; transition: all 0.1s;
-}
-.mbtn.active { border-color: var(--accent); color: var(--accent); background: #1a1a0a; }
-
-/* Preview */
-.preview-wrap {
-  display: none; position: relative;
-  border: 1px solid var(--border); background: #111; overflow: hidden;
-}
-.preview-wrap.visible { display: block; }
-
-/* Checkerboard bg for transparency preview */
-.checker-bg {
-  position: absolute; inset: 0;
-  background-image:
-    linear-gradient(45deg, #222 25%, transparent 25%),
-    linear-gradient(-45deg, #222 25%, transparent 25%),
-    linear-gradient(45deg, transparent 75%, #222 75%),
-    linear-gradient(-45deg, transparent 75%, #222 75%);
-  background-size: 16px 16px;
-  background-position: 0 0, 0 8px, 8px -8px, -8px 0px;
-}
-
-#previewCanvas {
-  display: block; width: 100%; height: auto;
-  position: relative;
-}
-
-/* Eyedropper cursor hint */
-.eyedrop-hint {
-  display: none; font-size: 11px; color: var(--accent);
-  padding: 6px 0;
-}
-.eyedrop-hint.visible { display: block; }
-
-.btn-row { display: flex; gap: 8px; }
+.val { font-size: 12px; color: #e8ff00; min-width: 36px; text-align: right; }
+.btns { display: flex; gap: 6px; flex-wrap: wrap; }
 .btn {
-  font-family: var(--mono); font-size: 11px; letter-spacing: 0.08em;
-  padding: 10px 18px; border: 1px solid var(--border);
-  background: transparent; color: var(--text); cursor: pointer; transition: all 0.1s;
+  font-family: 'Courier New', monospace; font-size: 11px;
+  padding: 6px 14px; border: 1px solid #333;
+  background: transparent; color: #888; cursor: pointer;
 }
-.btn:hover { border-color: var(--accent); color: var(--accent); }
-.btn.primary { background: var(--accent); color: #000; border-color: var(--accent); font-weight: 700; }
-.btn.primary:hover { opacity: 0.85; }
-.btn:disabled { opacity: 0.3; cursor: not-allowed; }
+.btn.on { border-color: #e8ff00; color: #e8ff00; background: #1a1a0a; }
+.act {
+  font-family: 'Courier New', monospace; font-size: 11px;
+  padding: 9px 18px; border: 1px solid #333;
+  background: transparent; color: #f0f0f0; cursor: pointer;
+}
+.act.primary { background: #e8ff00; color: #000; border-color: #e8ff00; font-weight: 700; }
+.act.red { border-color: #f44; color: #f44; }
+.act:disabled { opacity: 0.3; cursor: not-allowed; }
+.canvas-area {
+  display: none; border: 1px solid #222; overflow: hidden;
+  background-image:
+    linear-gradient(45deg,#1e1e1e 25%,transparent 25%),
+    linear-gradient(-45deg,#1e1e1e 25%,transparent 25%),
+    linear-gradient(45deg,transparent 75%,#1e1e1e 75%),
+    linear-gradient(-45deg,transparent 75%,#1e1e1e 75%);
+  background-size: 16px 16px;
+  background-position: 0 0, 0 8px, 8px -8px, -8px 0;
+}
+.canvas-area.show { display: block; }
+canvas { display: block; width: 100%; height: auto; cursor: crosshair; touch-action: none; }
+.status { font-size: 11px; color: #555; min-height: 16px; }
+.info { font-size: 11px; color: #444; line-height: 1.7; }
 
-.status { font-size: 11px; color: var(--muted); min-height: 16px; }
+/* 保存用オーバーレイ */
+#saveOverlay {
+  display: none; position: fixed; inset: 0;
+  background: rgba(0,0,0,0.92); z-index: 100;
+  flex-direction: column; align-items: center; justify-content: center; gap: 16px;
+  padding: 24px;
+}
+#saveOverlay.show { display: flex; }
+#saveOverlay img { max-width: 100%; max-height: 60vh; border: 1px solid #333; }
+#saveOverlay p { font-size: 13px; color: #aaa; text-align: center; line-height: 1.7; }
+#saveOverlay button {
+  font-family: 'Courier New', monospace; font-size: 12px;
+  padding: 10px 24px; border: 1px solid #555;
+  background: transparent; color: #f0f0f0; cursor: pointer;
+}
 </style>
 </head>
 <body>
-
 <header>
-  <h1>BG REMOVE</h1>
-  <span>背景透過 / 色距離方式</span>
+  <h1>塗りつぶし透過</h1>
+  <span class="sub">タップした色の隣接範囲を透過 → PNG保存</span>
 </header>
+<div class="wrap">
 
-<div class="layout">
-
-  <div class="dropzone" id="dropzone">
-    <input type="file" accept="image/*" id="fileInput">
-    <div style="font-size:26px;opacity:0.3">⊕</div>
-    <div class="dropzone-label">IMAGE DROP / CLICK TO SELECT</div>
+  <div class="drop" id="drop">
+    <input type="file" accept="image/*" id="file">
+    <div style="font-size:22px;opacity:0.3">＋</div>
+    <p id="dropMsg">画像をタップして選択</p>
   </div>
 
-  <div class="ctrl-bar">
-    <!-- Color pick -->
-    <div class="ctrl-row">
-      <div class="ctrl-label">BACKGROUND COLOR</div>
-      <div class="color-row">
-        <div class="color-swatch" id="swatchEl">
-          <input type="color" id="colorPicker" value="#000000">
-        </div>
-        <div class="color-hex" id="colorHex">#000000</div>
-        <div class="mode-btns">
-          <button class="mbtn active" id="btnManual" onclick="setPickMode('manual')">MANUAL</button>
-          <button class="mbtn" id="btnEye" onclick="setPickMode('eye')">EYEDROPPER</button>
-        </div>
+  <div class="ctrls">
+    <div class="row">
+      <div class="lbl">許容誤差</div>
+      <input type="range" id="tol" min="0" max="150" value="30">
+      <div class="val" id="tolVal">30</div>
+    </div>
+    <div class="row">
+      <div class="lbl">モード</div>
+      <div class="btns">
+        <button class="btn on" id="bErase" onclick="setMode('erase')">透過</button>
+        <button class="btn" id="bRestore" onclick="setMode('restore')">復元</button>
       </div>
     </div>
-
-    <!-- Threshold -->
-    <div class="ctrl-row">
-      <div class="ctrl-label">THRESHOLD</div>
-      <input type="range" id="threshold" min="0" max="150" value="30" step="1">
-      <div class="ctrl-val" id="thresholdVal">30</div>
-    </div>
-
-    <!-- Softness (anti-alias zone) -->
-    <div class="ctrl-row">
-      <div class="ctrl-label">SOFTNESS</div>
-      <input type="range" id="softness" min="0" max="60" value="10" step="1">
-      <div class="ctrl-val" id="softnessVal">10</div>
-    </div>
-
-    <!-- Spill suppress -->
-    <div class="ctrl-row">
-      <div class="ctrl-label">SPILL SUPPRESS</div>
-      <input type="range" id="spill" min="0" max="100" value="0" step="1">
-      <div class="ctrl-val" id="spillVal">0</div>
+    <div class="row">
+      <div class="lbl">表示</div>
+      <div class="btns">
+        <button class="btn on" id="bAlpha" onclick="setPrev('alpha')">透過表示</button>
+        <button class="btn" id="bOrig" onclick="setPrev('orig')">元画像</button>
+      </div>
     </div>
   </div>
 
-  <div class="eyedrop-hint" id="eyedropHint">▶ 画像をクリックして背景色をピックしてください</div>
-
-  <div class="preview-wrap" id="previewWrap">
-    <div class="checker-bg"></div>
-    <canvas id="previewCanvas"></canvas>
+  <div class="canvas-area" id="area">
+    <canvas id="cv"></canvas>
   </div>
 
-  <div class="status" id="status"></div>
+  <div class="status" id="st"></div>
 
-  <div class="btn-row">
-    <button class="btn primary" id="dlBtn" disabled>↓ DOWNLOAD PNG</button>
+  <div class="btns">
+    <button class="act" id="bUndo" onclick="doUndo()" disabled>← 元に戻す</button>
+    <button class="act red" id="bClear" onclick="doClear()" disabled>リセット</button>
+    <button class="act primary" id="bDl" onclick="doDl()" disabled>↓ PNG保存</button>
   </div>
 
+  <div class="info">
+    画像をタップ → その点から隣接する近似色を一括透過。<br>
+    許容誤差を上げると広い範囲が透過されます。
+  </div>
 </div>
 
-<!-- offscreen -->
-<canvas id="srcCanvas" style="display:none"></canvas>
+<!-- 保存オーバーレイ -->
+<div id="saveOverlay">
+  <img id="saveImg" src="" alt="出力画像">
+  <p>iOSは画像を長押し →「写真に追加」で保存<br>PCは右クリック → 名前を付けて保存</p>
+  <button onclick="document.getElementById('saveOverlay').className=''">閉じる</button>
+</div>
+
+<canvas id="src" style="display:none"></canvas>
 
 <script>
-let srcImg = null;
-let imgW = 0, imgH = 0;
-let pickMode = 'manual';
-let bgColor = { r: 0, g: 0, b: 0 };
-let renderScheduled = false;
-let lastResult = null; // ImageData
+var W=0, H=0, srcImg=null, mask=null, mode='erase', prev='alpha', stack=[];
 
-// ---- Load ----
-const dropzone = document.getElementById('dropzone');
-const fileInput = document.getElementById('fileInput');
+document.getElementById('tol').oninput = function(){
+  document.getElementById('tolVal').textContent = this.value;
+};
 
-dropzone.addEventListener('dragover', e => { e.preventDefault(); dropzone.classList.add('drag-over'); });
-dropzone.addEventListener('dragleave', () => dropzone.classList.remove('drag-over'));
-dropzone.addEventListener('drop', e => {
-  e.preventDefault(); dropzone.classList.remove('drag-over');
-  const f = e.dataTransfer.files[0];
-  if (f && f.type.startsWith('image/')) loadImage(f);
-});
-fileInput.addEventListener('change', e => { if (e.target.files[0]) loadImage(e.target.files[0]); });
+var drop = document.getElementById('drop');
+drop.addEventListener('dragover', function(e){ e.preventDefault(); });
+drop.addEventListener('drop', function(e){ e.preventDefault(); load(e.dataTransfer.files[0]); });
+document.getElementById('file').onchange = function(){ load(this.files[0]); };
 
-function loadImage(file) {
-  const reader = new FileReader();
-  reader.onload = ev => {
-    const img = new Image();
-    img.onload = () => {
-      srcImg = img;
-      imgW = img.width; imgH = img.height;
-      const src = document.getElementById('srcCanvas');
-      src.width = imgW; src.height = imgH;
-      src.getContext('2d').drawImage(img, 0, 0);
-
-      const preview = document.getElementById('previewCanvas');
-      preview.width = imgW; preview.height = imgH;
-
-      document.getElementById('previewWrap').classList.add('visible');
-      scheduleRender();
+function load(f) {
+  if (!f || !f.type.match(/^image\//)) return;
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    var img = new Image();
+    img.onload = function() {
+      srcImg = img; W = img.width; H = img.height;
+      var sc = document.getElementById('src');
+      sc.width = W; sc.height = H;
+      sc.getContext('2d').drawImage(img, 0, 0);
+      mask = new Uint8Array(W * H).fill(255);
+      stack = [];
+      var cv = document.getElementById('cv');
+      cv.width = W; cv.height = H;
+      setupTap(cv);
+      document.getElementById('area').className = 'canvas-area show';
+      document.getElementById('bClear').disabled = false;
+      document.getElementById('bDl').disabled = false;
+      document.getElementById('dropMsg').textContent = '✓ 読み込み済み（タップで変更）';
+      render();
     };
-    img.src = ev.target.result;
+    img.src = e.target.result;
   };
-  reader.readAsDataURL(file);
+  reader.readAsDataURL(f);
 }
 
-// ---- Color pick ----
-const colorPicker = document.getElementById('colorPicker');
-const swatchEl = document.getElementById('swatchEl');
-const colorHex = document.getElementById('colorHex');
+function setupTap(cv) {
+  var nc = document.createElement('canvas');
+  nc.id = 'cv'; nc.width = cv.width; nc.height = cv.height;
+  nc.style.cssText = cv.style.cssText || '';
+  cv.parentNode.replaceChild(nc, cv);
 
-colorPicker.addEventListener('input', () => {
-  const hex = colorPicker.value;
-  bgColor = hexToRgb(hex);
-  updateSwatchDisplay(hex);
-  scheduleRender();
-});
-
-function hexToRgb(hex) {
-  const r = parseInt(hex.slice(1,3),16);
-  const g = parseInt(hex.slice(3,5),16);
-  const b = parseInt(hex.slice(5,7),16);
-  return { r, g, b };
-}
-function rgbToHex(r,g,b) {
-  return '#' + [r,g,b].map(v => v.toString(16).padStart(2,'0')).join('');
-}
-function updateSwatchDisplay(hex) {
-  swatchEl.style.background = hex;
-  colorHex.textContent = hex.toUpperCase();
+  function tap(e) {
+    e.preventDefault();
+    var touch = e.changedTouches ? e.changedTouches[0] : e;
+    var r = nc.getBoundingClientRect();
+    var s = r.width / W;
+    var x = Math.floor((touch.clientX - r.left) / s);
+    var y = Math.floor((touch.clientY - r.top) / s);
+    if (x < 0 || x >= W || y < 0 || y >= H) return;
+    fill(x, y);
+  }
+  nc.addEventListener('click', tap);
+  nc.addEventListener('touchend', tap, { passive: false });
 }
 
-updateSwatchDisplay('#000000');
+function fill(sx, sy) {
+  var sc = document.getElementById('src');
+  var sd = sc.getContext('2d').getImageData(0, 0, W, H).data;
+  var tol = parseInt(document.getElementById('tol').value);
+  var ti = (sy * W + sx) * 4;
+  var tr = sd[ti], tg = sd[ti+1], tb = sd[ti+2];
+  var newA = (mode === 'erase') ? 0 : 255;
+  var tolSq = tol * tol * 3; // 二乗距離で比較（sqrtなし＝高速）
 
-function setPickMode(m) {
-  pickMode = m;
-  document.getElementById('btnManual').classList.toggle('active', m === 'manual');
-  document.getElementById('btnEye').classList.toggle('active', m === 'eye');
-  const hint = document.getElementById('eyedropHint');
-  hint.classList.toggle('visible', m === 'eye');
-  const preview = document.getElementById('previewCanvas');
-  preview.style.cursor = m === 'eye' ? 'crosshair' : 'default';
-}
+  stack.push(mask.slice());
+  if (stack.length > 10) stack.shift();
+  document.getElementById('bUndo').disabled = false;
 
-// Eyedropper on preview canvas — sample from SOURCE image
-document.getElementById('previewCanvas').addEventListener('click', e => {
-  if (pickMode !== 'eye') return;
-  const canvas = e.currentTarget;
-  const rect = canvas.getBoundingClientRect();
-  const s = canvas.getBoundingClientRect().width / imgW;
-  const x = Math.floor((e.clientX - rect.left) / s);
-  const y = Math.floor((e.clientY - rect.top) / s);
+  var visited = new Uint8Array(W * H);
+  // キューをTypedArrayで管理（配列の再確保を避ける）
+  var qSize = W * H;
+  var qx = new Int32Array(qSize);
+  var qy = new Int32Array(qSize);
+  var head = 0, tail = 0;
+  qx[tail] = sx; qy[tail] = sy; tail++;
+  visited[sy * W + sx] = 1;
+  var count = 0;
+  var t0 = Date.now();
 
-  const src = document.getElementById('srcCanvas');
-  const ctx = src.getContext('2d');
-  const px = ctx.getImageData(x, y, 1, 1).data;
-  bgColor = { r: px[0], g: px[1], b: px[2] };
-  const hex = rgbToHex(px[0], px[1], px[2]);
-  colorPicker.value = hex;
-  updateSwatchDisplay(hex);
-  setPickMode('manual');
-  scheduleRender();
-});
+  while (head < tail) {
+    var cx = qx[head], cy = qy[head]; head++;
+    var idx = cy * W + cx;
+    var pi = idx * 4;
+    var dr = sd[pi]-tr, dg = sd[pi+1]-tg, db = sd[pi+2]-tb;
+    if (dr*dr + dg*dg + db*db > tolSq) continue;
+    mask[idx] = newA;
+    count++;
 
-// ---- Sliders ----
-function bindSlider(id, valId, suffix, cb) {
-  const el = document.getElementById(id);
-  const vl = document.getElementById(valId);
-  el.addEventListener('input', () => { vl.textContent = el.value + (suffix||''); cb && cb(); });
-}
-bindSlider('threshold', 'thresholdVal', '', scheduleRender);
-bindSlider('softness', 'softnessVal', '', scheduleRender);
-bindSlider('spill', 'spillVal', '', scheduleRender);
-
-// ---- Render (debounced via rAF) ----
-function scheduleRender() {
-  if (!srcImg) return;
-  if (renderScheduled) return;
-  renderScheduled = true;
-  requestAnimationFrame(doRender);
-}
-
-function doRender() {
-  renderScheduled = false;
-  const t0 = performance.now();
-  document.getElementById('status').textContent = 'processing...';
-
-  const threshold = parseInt(document.getElementById('threshold').value);
-  const softness  = parseInt(document.getElementById('softness').value);
-  const spillAmt  = parseInt(document.getElementById('spill').value) / 100;
-
-  const src = document.getElementById('srcCanvas');
-  const srcCtx = src.getContext('2d');
-  const srcData = srcCtx.getImageData(0, 0, imgW, imgH);
-  const sd = srcData.data;
-
-  const outData = new ImageData(imgW, imgH);
-  const od = outData.data;
-
-  const br = bgColor.r, bg = bgColor.g, bb = bgColor.b;
-  const tLow  = threshold;
-  const tHigh = threshold + Math.max(1, softness);
-
-  for (let i = 0; i < sd.length; i += 4) {
-    const r = sd[i], g = sd[i+1], b = sd[i+2], a = sd[i+3];
-
-    // Color distance (Euclidean in RGB — fast, no perceptual overhead)
-    const dist = Math.sqrt(
-      (r - br) * (r - br) +
-      (g - bg) * (g - bg) +
-      (b - bb) * (b - bb)
-    );
-
-    // Alpha: 0 if dist <= tLow, 255 if dist >= tHigh, smooth between
-    let alpha;
-    if (dist <= tLow) {
-      alpha = 0;
-    } else if (dist >= tHigh) {
-      alpha = a; // preserve original alpha
-    } else {
-      // smooth step
-      const t = (dist - tLow) / (tHigh - tLow);
-      alpha = Math.round(t * t * (3 - 2 * t) * a);
-    }
-
-    // Spill suppression: desaturate toward neutral for pixels near bg hue
-    let fr = r, fg = g, fb = b;
-    if (spillAmt > 0 && alpha > 0 && alpha < a) {
-      const blend = spillAmt * (1 - alpha / 255);
-      const lum = 0.299 * r + 0.587 * g + 0.114 * b;
-      fr = Math.round(r + (lum - r) * blend);
-      fg = Math.round(g + (lum - g) * blend);
-      fb = Math.round(b + (lum - b) * blend);
-    }
-
-    od[i]   = fr;
-    od[i+1] = fg;
-    od[i+2] = fb;
-    od[i+3] = alpha;
+    var nx, ny, ni;
+    if (cx > 0)    { nx=cx-1; ny=cy; ni=ny*W+nx; if(!visited[ni]){visited[ni]=1; qx[tail]=nx; qy[tail]=ny; tail++;} }
+    if (cx < W-1)  { nx=cx+1; ny=cy; ni=ny*W+nx; if(!visited[ni]){visited[ni]=1; qx[tail]=nx; qy[tail]=ny; tail++;} }
+    if (cy > 0)    { nx=cx;   ny=cy-1; ni=ny*W+nx; if(!visited[ni]){visited[ni]=1; qx[tail]=nx; qy[tail]=ny; tail++;} }
+    if (cy < H-1)  { nx=cx;   ny=cy+1; ni=ny*W+nx; if(!visited[ni]){visited[ni]=1; qx[tail]=nx; qy[tail]=ny; tail++;} }
   }
 
-  lastResult = outData;
-
-  const preview = document.getElementById('previewCanvas');
-  preview.getContext('2d').putImageData(outData, 0, 0);
-
-  document.getElementById('dlBtn').disabled = false;
-  const ms = (performance.now() - t0).toFixed(1);
-  document.getElementById('status').textContent =
-    `${imgW} × ${imgH}px — ${ms}ms`;
+  document.getElementById('st').textContent = count.toLocaleString() + ' px — ' + (Date.now()-t0) + 'ms';
+  render();
 }
 
-// ---- Download ----
-document.getElementById('dlBtn').addEventListener('click', () => {
-  if (!lastResult) return;
-  const out = document.createElement('canvas');
-  out.width = imgW; out.height = imgH;
-  out.getContext('2d').putImageData(lastResult, 0, 0);
+function render() {
+  var cv = document.getElementById('cv');
+  if (!cv || !srcImg) return;
+  var ctx = cv.getContext('2d');
+  ctx.clearRect(0, 0, W, H);
+  ctx.drawImage(srcImg, 0, 0);
+  if (prev === 'orig') return;
+  var id = ctx.getImageData(0, 0, W, H);
+  var d = id.data;
+  for (var i = 0; i < mask.length; i++) d[i*4+3] = mask[i];
+  ctx.putImageData(id, 0, 0);
+}
 
-  // iOS Safari doesn't support a.click() download — open as image in new tab
-  // User can then long-press → Save Image
-  out.toBlob(blob => {
-    const url = URL.createObjectURL(blob);
-    const win = window.open(url, '_blank');
-    // Fallback if popup blocked
-    if (!win) {
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = 'removed-bg.png';
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-    }
-    setTimeout(() => URL.revokeObjectURL(url), 60000);
-  }, 'image/png');
-});
+function setMode(m) {
+  mode = m;
+  document.getElementById('bErase').className   = 'btn' + (m==='erase'   ? ' on' : '');
+  document.getElementById('bRestore').className = 'btn' + (m==='restore' ? ' on' : '');
+}
+function setPrev(p) {
+  prev = p;
+  document.getElementById('bAlpha').className = 'btn' + (p==='alpha' ? ' on' : '');
+  document.getElementById('bOrig').className  = 'btn' + (p==='orig'  ? ' on' : '');
+  render();
+}
+function doUndo() {
+  if (!stack.length) return;
+  mask = stack.pop();
+  if (!stack.length) document.getElementById('bUndo').disabled = true;
+  render();
+  document.getElementById('st').textContent = '元に戻しました';
+}
+function doClear() {
+  stack.push(mask.slice());
+  if (stack.length > 10) stack.shift();
+  document.getElementById('bUndo').disabled = false;
+  mask.fill(255);
+  render();
+  document.getElementById('st').textContent = 'リセットしました';
+}
+
+function doDl() {
+  var out = document.createElement('canvas');
+  out.width = W; out.height = H;
+  var ctx = out.getContext('2d');
+  ctx.drawImage(srcImg, 0, 0);
+  var id = ctx.getImageData(0, 0, W, H);
+  var d = id.data;
+  for (var i = 0; i < mask.length; i++) d[i*4+3] = mask[i];
+  ctx.putImageData(id, 0, 0);
+
+  // window.openを使わずページ内オーバーレイに表示
+  var url = out.toDataURL('image/png');
+  document.getElementById('saveImg').src = url;
+  document.getElementById('saveOverlay').className = 'show';
+}
 </script>
 </body>
 </html>
