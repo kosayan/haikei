@@ -6,109 +6,77 @@
 <title>背景処理ツール</title>
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
-:root {
-  --bg: #0a0a0a; --surface: #141414; --border: #2a2a2a;
-  --accent: #e8ff00; --text: #f0f0f0; --muted: #555;
-  --mono: 'Courier New', monospace;
-}
 body {
-  background: var(--bg); color: var(--text); font-family: var(--mono);
+  background: #0a0a0a; color: #f0f0f0;
+  font-family: 'Courier New', monospace;
   min-height: 100vh; display: flex; flex-direction: column;
-  align-items: center; padding: 28px 16px; gap: 16px;
+  align-items: center; padding: 24px 16px; gap: 14px;
 }
 header {
   width: 100%; max-width: 860px;
-  border-bottom: 1px solid var(--border); padding-bottom: 14px;
-  display: flex; align-items: baseline; gap: 14px;
+  border-bottom: 1px solid #222; padding-bottom: 12px;
+  display: flex; align-items: baseline; gap: 12px;
 }
-header h1 { font-size: 20px; font-weight: 700; letter-spacing: 0.12em; color: var(--accent); }
-header span { font-size: 11px; color: var(--muted); }
-.layout { width: 100%; max-width: 860px; display: flex; flex-direction: column; gap: 12px; }
-.dropzone {
-  border: 1px dashed var(--border); background: var(--surface);
-  height: 110px; display: flex; flex-direction: column;
-  align-items: center; justify-content: center; gap: 8px;
-  cursor: pointer; transition: all 0.15s; position: relative;
+h1 { font-size: 18px; font-weight: 700; color: #e8ff00; letter-spacing: 0.1em; }
+.sub { font-size: 11px; color: #555; }
+.wrap { width: 100%; max-width: 860px; display: flex; flex-direction: column; gap: 12px; }
+.drop {
+  border: 1px dashed #333; background: #141414;
+  height: 100px; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: 6px;
+  cursor: pointer; position: relative;
 }
-.dropzone:hover, .dropzone.over { border-color: var(--accent); background: #1a1a0a; }
-.dropzone input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
-.dropzone-label { font-size: 12px; color: var(--muted); }
-.ctrl-bar {
-  background: var(--surface); border: 1px solid var(--border);
+.drop input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+.drop p { font-size: 12px; color: #555; }
+.ctrls {
+  background: #141414; border: 1px solid #222;
   padding: 12px 16px; display: flex; flex-direction: column; gap: 12px;
 }
-.ctrl-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
-.ctrl-label { font-size: 11px; color: var(--muted); white-space: nowrap; min-width: 110px; }
+.row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.lbl { font-size: 11px; color: #555; min-width: 100px; white-space: nowrap; }
 input[type=range] {
-  flex: 1; min-width: 80px; -webkit-appearance: none; appearance: none;
-  height: 2px; background: var(--border); outline: none; cursor: pointer;
+  flex: 1; min-width: 80px; height: 2px;
+  -webkit-appearance: none; appearance: none;
+  background: #333; outline: none; cursor: pointer;
 }
 input[type=range]::-webkit-slider-thumb {
-  -webkit-appearance: none; width: 13px; height: 13px; background: var(--accent); cursor: pointer;
+  -webkit-appearance: none; width: 14px; height: 14px; background: #e8ff00; cursor: pointer;
 }
-input[type=range]::-moz-range-thumb {
-  width: 13px; height: 13px; background: var(--accent); border: none; cursor: pointer;
+.val { font-size: 12px; color: #e8ff00; min-width: 36px; text-align: right; }
+.btns { display: flex; gap: 6px; flex-wrap: wrap; }
+.btn {
+  font-family: 'Courier New', monospace; font-size: 11px;
+  padding: 6px 14px; border: 1px solid #333;
+  background: transparent; color: #888; cursor: pointer;
 }
-.ctrl-val { font-size: 12px; color: var(--accent); min-width: 36px; text-align: right; }
-.color-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.btn.on { border-color: #e8ff00; color: #e8ff00; background: #1a1a0a; }
 .swatch {
-  width: 28px; height: 28px; border: 1px solid var(--border);
-  cursor: pointer; flex-shrink: 0; position: relative;
+  width: 28px; height: 28px; border: 1px solid #444;
+  cursor: pointer; position: relative; flex-shrink: 0;
 }
-.swatch input[type=color] {
-  position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%;
-}
-.hex { font-size: 12px; color: var(--accent); letter-spacing: 0.08em; min-width: 70px; }
-.mbtns { display: flex; gap: 6px; flex-wrap: wrap; }
-.mbtn {
-  font-family: var(--mono); font-size: 10px; letter-spacing: 0.06em;
-  padding: 5px 10px; border: 1px solid var(--border);
-  background: transparent; color: var(--muted); cursor: pointer;
-}
-.mbtn.on { border-color: var(--accent); color: var(--accent); background: #1a1a0a; }
-/* 出力モード切替 */
-.out-mode-bar {
-  display: flex; border: 1px solid var(--border); overflow: hidden;
-}
-.out-mbtn {
-  flex: 1; font-family: var(--mono); font-size: 11px; letter-spacing: 0.06em;
-  padding: 9px 8px; border: none; border-right: 1px solid var(--border);
-  background: transparent; color: var(--muted); cursor: pointer; text-align: center;
-}
-.out-mbtn:last-child { border-right: none; }
-.out-mbtn.on { background: #1a1a0a; color: var(--accent); }
-/* 塗り替え色行（出力モードが塗り替えのときだけ表示） */
-#fillColorRow { display: none; }
-#fillColorRow.visible { display: flex; }
-/* preview */
-.preview-wrap {
+.swatch input { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
+.hex { font-size: 12px; color: #e8ff00; min-width: 70px; }
+.canvas-area {
   display: none; position: relative;
-  border: 1px solid var(--border); overflow: hidden;
-}
-.preview-wrap.visible { display: block; }
-.checker-bg {
-  position: absolute; inset: 0;
+  border: 1px solid #222; overflow: hidden;
   background-image:
-    linear-gradient(45deg,#222 25%,transparent 25%),
-    linear-gradient(-45deg,#222 25%,transparent 25%),
-    linear-gradient(45deg,transparent 75%,#222 75%),
-    linear-gradient(-45deg,transparent 75%,#222 75%);
+    linear-gradient(45deg,#1e1e1e 25%,transparent 25%),
+    linear-gradient(-45deg,#1e1e1e 25%,transparent 25%),
+    linear-gradient(45deg,transparent 75%,#1e1e1e 75%),
+    linear-gradient(-45deg,transparent 75%,#1e1e1e 75%);
   background-size: 16px 16px;
   background-position: 0 0,0 8px,8px -8px,-8px 0;
 }
-#previewCanvas { display: block; width: 100%; height: auto; position: relative; }
-.eyedrop-hint { display: none; font-size: 11px; color: var(--accent); padding: 4px 0; }
-.eyedrop-hint.visible { display: block; }
-.btn-row { display: flex; gap: 8px; }
-.btn {
-  font-family: var(--mono); font-size: 11px; letter-spacing: 0.08em;
-  padding: 10px 18px; border: 1px solid var(--border);
-  background: transparent; color: var(--text); cursor: pointer;
+.canvas-area.show { display: block; }
+canvas { display: block; width: 100%; height: auto; }
+.status { font-size: 11px; color: #555; min-height: 16px; }
+.act {
+  font-family: 'Courier New', monospace; font-size: 11px;
+  padding: 10px 18px; border: 1px solid #333;
+  background: transparent; color: #f0f0f0; cursor: pointer;
 }
-.btn.primary { background: var(--accent); color: #000; border-color: var(--accent); font-weight: 700; }
-.btn:disabled { opacity: 0.3; cursor: not-allowed; }
-.status { font-size: 11px; color: var(--muted); min-height: 16px; }
-/* 保存オーバーレイ */
+.act.primary { background: #e8ff00; color: #000; border-color: #e8ff00; font-weight: 700; }
+.act:disabled { opacity: 0.3; cursor: not-allowed; }
 #saveOverlay {
   display: none; position: fixed; inset: 0;
   background: rgba(0,0,0,0.93); z-index: 100;
@@ -119,280 +87,260 @@ input[type=range]::-moz-range-thumb {
 #saveOverlay img { max-width: 100%; max-height: 60vh; border: 1px solid #333; }
 #saveOverlay p { font-size: 13px; color: #aaa; text-align: center; line-height: 1.7; }
 #saveOverlay button {
-  font-family: var(--mono); font-size: 12px;
+  font-family: 'Courier New', monospace; font-size: 12px;
   padding: 10px 24px; border: 1px solid #555;
   background: transparent; color: #f0f0f0; cursor: pointer;
 }
+#fillRow { display: none; }
 </style>
 </head>
 <body>
 <header>
   <h1>背景処理ツール</h1>
-  <span>透過 / 色塗り替え</span>
+  <span class="sub">透過 / 色塗り替え</span>
 </header>
-<div class="layout">
+<div class="wrap">
 
-  <div class="dropzone" id="dropzone">
-    <input type="file" accept="image/*" id="fileInput">
-    <div style="font-size:26px;opacity:0.3">⊕</div>
-    <div class="dropzone-label" id="dropLabel">画像をドロップ、またはタップして選択</div>
+  <div class="drop" id="drop">
+    <input type="file" accept="image/*" id="file">
+    <div style="font-size:22px;opacity:0.3">＋</div>
+    <p id="dropMsg">画像をタップして選択</p>
   </div>
 
-  <div class="ctrl-bar">
+  <div class="ctrls">
 
     <!-- 出力モード -->
-    <div class="ctrl-row">
-      <div class="ctrl-label">出力モード</div>
-      <div class="out-mode-bar" style="flex:1">
-        <button class="out-mbtn on" id="omTransp" onclick="setOutMode('transp')">透過（PNG）</button>
-        <button class="out-mbtn" id="omFill"   onclick="setOutMode('fill')">色に塗り替え</button>
+    <div class="row">
+      <div class="lbl">出力モード</div>
+      <div class="btns">
+        <button class="btn on" id="modeTransp" onclick="setOutMode('transp')">透過</button>
+        <button class="btn"    id="modeFill"   onclick="setOutMode('fill')">色に塗り替え</button>
       </div>
     </div>
 
-    <!-- 塗り替え色（fillモード時のみ） -->
-    <div class="ctrl-row" id="fillColorRow">
-      <div class="ctrl-label">塗り替え色</div>
-      <div class="color-row">
-        <div class="swatch" id="fillSwatchEl">
-          <input type="color" id="fillColorPicker" value="#ffffff">
-        </div>
-        <div class="hex" id="fillColorHex">#FFFFFF</div>
+    <!-- 塗り替え色（fillのみ表示） -->
+    <div class="row" id="fillRow">
+      <div class="lbl">塗り替え色</div>
+      <div class="swatch" id="fillSwatch" style="background:#ffffff">
+        <input type="color" id="fillPicker" value="#ffffff">
       </div>
+      <div class="hex" id="fillHex">#FFFFFF</div>
     </div>
 
     <!-- 背景色 -->
-    <div class="ctrl-row">
-      <div class="ctrl-label">背景色</div>
-      <div class="color-row">
-        <div class="swatch" id="bgSwatchEl">
-          <input type="color" id="bgColorPicker" value="#000000">
-        </div>
-        <div class="hex" id="bgColorHex">#000000</div>
-        <div class="mbtns">
-          <button class="mbtn on" id="btnManual" onclick="setPickMode('manual')">手動</button>
-          <button class="mbtn" id="btnEye" onclick="setPickMode('eye')">スポイト</button>
-        </div>
+    <div class="row">
+      <div class="lbl">背景色</div>
+      <div class="swatch" id="bgSwatch" style="background:#000000">
+        <input type="color" id="bgPicker" value="#000000">
+      </div>
+      <div class="hex" id="bgHex">#000000</div>
+      <div class="btns">
+        <button class="btn on" id="btnManual" onclick="setPickMode('manual')">手動</button>
+        <button class="btn"    id="btnEye"    onclick="setPickMode('eye')">スポイト</button>
       </div>
     </div>
 
-    <!-- Threshold -->
-    <div class="ctrl-row">
-      <div class="ctrl-label">許容誤差</div>
-      <input type="range" id="threshold" min="0" max="150" value="30">
-      <div class="ctrl-val" id="thresholdVal">30</div>
+    <!-- 許容誤差 -->
+    <div class="row">
+      <div class="lbl">許容誤差</div>
+      <input type="range" id="tol" min="0" max="150" value="30">
+      <div class="val" id="tolVal">30</div>
     </div>
 
-    <!-- Softness -->
-    <div class="ctrl-row">
-      <div class="ctrl-label">境界のぼかし</div>
-      <input type="range" id="softness" min="0" max="60" value="10">
-      <div class="ctrl-val" id="softnessVal">10</div>
+    <!-- 境界ぼかし -->
+    <div class="row">
+      <div class="lbl">境界ぼかし</div>
+      <input type="range" id="soft" min="0" max="60" value="10">
+      <div class="val" id="softVal">10</div>
     </div>
 
-    <!-- Spill -->
-    <div class="ctrl-row">
-      <div class="ctrl-label">色かぶり除去</div>
+    <!-- 色かぶり除去 -->
+    <div class="row">
+      <div class="lbl">色かぶり除去</div>
       <input type="range" id="spill" min="0" max="100" value="0">
-      <div class="ctrl-val" id="spillVal">0</div>
+      <div class="val" id="spillVal">0</div>
     </div>
 
   </div>
 
-  <div class="eyedrop-hint" id="eyedropHint">▶ 画像をタップして背景色をピックしてください</div>
-
-  <div class="preview-wrap" id="previewWrap">
-    <div class="checker-bg" id="checkerBg"></div>
-    <canvas id="previewCanvas"></canvas>
+  <div id="eyeHint" style="display:none;font-size:11px;color:#e8ff00;padding:4px 0">
+    ▶ 画像をタップして背景色をピック
   </div>
 
-  <div class="status" id="status"></div>
+  <div class="canvas-area" id="area">
+    <canvas id="cv"></canvas>
+  </div>
 
-  <div class="btn-row">
-    <button class="btn primary" id="dlBtn" disabled onclick="doDl()">↓ 保存</button>
+  <div class="status" id="st"></div>
+
+  <div class="btns">
+    <button class="act primary" id="dlBtn" onclick="doDl()" disabled>↓ 保存</button>
   </div>
 
 </div>
 
-<!-- 保存オーバーレイ -->
 <div id="saveOverlay">
-  <img id="saveImg" src="" alt="出力画像">
+  <img id="saveImg" src="" alt="">
   <p>iOSは長押し →「写真に追加」で保存<br>PCは右クリック → 名前を付けて保存</p>
   <button onclick="document.getElementById('saveOverlay').className=''">閉じる</button>
 </div>
 
-<canvas id="srcCanvas" style="display:none"></canvas>
+<canvas id="src" style="display:none"></canvas>
 
 <script>
 var srcImg=null, imgW=0, imgH=0;
+var outMode='transp';
 var pickMode='manual';
-var outMode='transp'; // transp | fill
-var bgColor={r:0,g:0,b:0};
-var fillColor={r:255,g:255,b:255};
-var renderScheduled=false;
+var bgR=0, bgG=0, bgB=0;
+var fillR=255, fillG=255, fillB=255;
 var lastResult=null;
+var scheduled=false;
 
-// ---- load ----
-var dropzone=document.getElementById('dropzone');
-dropzone.addEventListener('dragover',function(e){e.preventDefault();dropzone.classList.add('over');});
-dropzone.addEventListener('dragleave',function(){dropzone.classList.remove('over');});
-dropzone.addEventListener('drop',function(e){e.preventDefault();dropzone.classList.remove('over');loadImg(e.dataTransfer.files[0]);});
-document.getElementById('fileInput').onchange=function(){loadImg(this.files[0]);};
+// 読み込み
+document.getElementById('drop').addEventListener('dragover',function(e){e.preventDefault();});
+document.getElementById('drop').addEventListener('drop',function(e){e.preventDefault();load(e.dataTransfer.files[0]);});
+document.getElementById('file').onchange=function(){load(this.files[0]);};
 
-function loadImg(f){
+function load(f){
   if(!f||!f.type.match(/^image\//)) return;
-  var reader=new FileReader();
-  reader.onload=function(e){
+  var rd=new FileReader();
+  rd.onload=function(e){
     var img=new Image();
     img.onload=function(){
       srcImg=img; imgW=img.width; imgH=img.height;
-      var sc=document.getElementById('srcCanvas');
-      sc.width=imgW; sc.height=imgH;
-      sc.getContext('2d').drawImage(img,0,0);
-      var pc=document.getElementById('previewCanvas');
-      pc.width=imgW; pc.height=imgH;
-      document.getElementById('previewWrap').classList.add('visible');
-      document.getElementById('dropLabel').textContent='✓ 読み込み済み（タップで変更）';
-      scheduleRender();
+      var s=document.getElementById('src');
+      s.width=imgW; s.height=imgH;
+      s.getContext('2d').drawImage(img,0,0);
+      var cv=document.getElementById('cv');
+      cv.width=imgW; cv.height=imgH;
+      document.getElementById('area').className='canvas-area show';
+      document.getElementById('dlBtn').disabled=false;
+      document.getElementById('dropMsg').textContent='✓ 読み込み済み';
+      go();
     };
     img.src=e.target.result;
   };
-  reader.readAsDataURL(f);
+  rd.readAsDataURL(f);
 }
 
-// ---- 出力モード ----
+// 出力モード
 function setOutMode(m){
   outMode=m;
-  document.getElementById('omTransp').className='out-mbtn'+(m==='transp'?' on':'');
-  document.getElementById('omFill').className='out-mbtn'+(m==='fill'?' on':'');
-  var fcr=document.getElementById('fillColorRow');
-  fcr.className='ctrl-row'+(m==='fill'?' visible':'');
-  // fillモードはチェッカー不要
-  document.getElementById('checkerBg').style.display=(m==='transp'?'':'none');
-  scheduleRender();
+  document.getElementById('modeTransp').className='btn'+(m==='transp'?' on':'');
+  document.getElementById('modeFill').className='btn'+(m==='fill'?' on':'');
+  document.getElementById('fillRow').style.display=(m==='fill'?'flex':'none');
+  go();
 }
 
-// ---- 背景色ピッカー ----
-document.getElementById('bgColorPicker').oninput=function(){
-  bgColor=hexToRgb(this.value);
-  document.getElementById('bgSwatchEl').style.background=this.value;
-  document.getElementById('bgColorHex').textContent=this.value.toUpperCase();
-  scheduleRender();
+// 背景色ピッカー
+document.getElementById('bgPicker').oninput=function(){
+  var h=this.value;
+  bgR=parseInt(h.slice(1,3),16); bgG=parseInt(h.slice(3,5),16); bgB=parseInt(h.slice(5,7),16);
+  document.getElementById('bgSwatch').style.background=h;
+  document.getElementById('bgHex').textContent=h.toUpperCase();
+  go();
 };
 
-// ---- 塗り替え色ピッカー ----
-document.getElementById('fillColorPicker').oninput=function(){
-  fillColor=hexToRgb(this.value);
-  document.getElementById('fillSwatchEl').style.background=this.value;
-  document.getElementById('fillColorHex').textContent=this.value.toUpperCase();
-  scheduleRender();
+// 塗り替え色ピッカー
+document.getElementById('fillPicker').oninput=function(){
+  var h=this.value;
+  fillR=parseInt(h.slice(1,3),16); fillG=parseInt(h.slice(3,5),16); fillB=parseInt(h.slice(5,7),16);
+  document.getElementById('fillSwatch').style.background=h;
+  document.getElementById('fillHex').textContent=h.toUpperCase();
+  go();
 };
 
-// ---- スポイト ----
+// スポイト
 function setPickMode(m){
   pickMode=m;
-  document.getElementById('btnManual').className='mbtn'+(m==='manual'?' on':'');
-  document.getElementById('btnEye').className='mbtn'+(m==='eye'?' on':'');
-  document.getElementById('eyedropHint').className='eyedrop-hint'+(m==='eye'?' visible':'');
-  document.getElementById('previewCanvas').style.cursor=(m==='eye'?'crosshair':'default');
+  document.getElementById('btnManual').className='btn'+(m==='manual'?' on':'');
+  document.getElementById('btnEye').className='btn'+(m==='eye'?' on':'');
+  document.getElementById('eyeHint').style.display=(m==='eye'?'block':'none');
+  document.getElementById('cv').style.cursor=(m==='eye'?'crosshair':'default');
 }
 
-document.getElementById('previewCanvas').addEventListener('click',function(e){
+document.getElementById('cv').addEventListener('click',function(e){
   if(pickMode!=='eye') return;
   var rect=this.getBoundingClientRect();
   var s=rect.width/imgW;
   var x=Math.floor((e.clientX-rect.left)/s);
   var y=Math.floor((e.clientY-rect.top)/s);
-  var px=document.getElementById('srcCanvas').getContext('2d').getImageData(x,y,1,1).data;
-  bgColor={r:px[0],g:px[1],b:px[2]};
-  var hex=rgbToHex(px[0],px[1],px[2]);
-  document.getElementById('bgColorPicker').value=hex;
-  document.getElementById('bgSwatchEl').style.background=hex;
-  document.getElementById('bgColorHex').textContent=hex.toUpperCase();
+  var px=document.getElementById('src').getContext('2d').getImageData(x,y,1,1).data;
+  bgR=px[0]; bgG=px[1]; bgB=px[2];
+  var h='#'+[bgR,bgG,bgB].map(function(v){return ('0'+v.toString(16)).slice(-2);}).join('');
+  document.getElementById('bgPicker').value=h;
+  document.getElementById('bgSwatch').style.background=h;
+  document.getElementById('bgHex').textContent=h.toUpperCase();
   setPickMode('manual');
-  scheduleRender();
+  go();
 });
 
-// ---- スライダー ----
-['threshold','softness','spill'].forEach(function(id){
+// スライダー
+['tol','soft','spill'].forEach(function(id){
   document.getElementById(id).oninput=function(){
     document.getElementById(id+'Val').textContent=this.value;
-    scheduleRender();
+    go();
   };
 });
 
-// ---- レンダリング ----
-function scheduleRender(){
-  if(!srcImg||renderScheduled) return;
-  renderScheduled=true;
-  requestAnimationFrame(doRender);
+// レンダリング
+function go(){
+  if(!srcImg||scheduled) return;
+  scheduled=true;
+  requestAnimationFrame(function(){
+    scheduled=false;
+    render();
+  });
 }
 
-function doRender(){
-  renderScheduled=false;
-  document.getElementById('status').textContent='処理中...';
-  setTimeout(function(){
-    var t0=Date.now();
-    var threshold=parseInt(document.getElementById('threshold').value);
-    var softness=parseInt(document.getElementById('softness').value);
-    var spillAmt=parseInt(document.getElementById('spill').value)/100;
-    var tLow=threshold;
-    var tHigh=threshold+Math.max(1,softness);
+function render(){
+  document.getElementById('st').textContent='処理中...';
+  var t0=Date.now();
+  var tol=parseInt(document.getElementById('tol').value);
+  var soft=parseInt(document.getElementById('soft').value);
+  var spillAmt=parseInt(document.getElementById('spill').value)/100;
+  var tLow=tol, tHigh=tol+Math.max(1,soft);
 
-    var sc=document.getElementById('srcCanvas');
-    var sd=sc.getContext('2d').getImageData(0,0,imgW,imgH).data;
-    var out=new ImageData(imgW,imgH);
-    var od=out.data;
+  var sc=document.getElementById('src');
+  var sd=sc.getContext('2d').getImageData(0,0,imgW,imgH).data;
+  var out=new ImageData(imgW,imgH);
+  var od=out.data;
 
-    var br=bgColor.r, bg=bgColor.g, bb=bgColor.b;
-    var fr_=fillColor.r, fg_=fillColor.g, fb_=fillColor.b;
-    var isFill=(outMode==='fill');
+  for(var i=0;i<sd.length;i+=4){
+    var r=sd[i],g=sd[i+1],b=sd[i+2],a=sd[i+3];
+    var dist=Math.sqrt((r-bgR)*(r-bgR)+(g-bgG)*(g-bgG)+(b-bgB)*(b-bgB));
+    var t=0;
+    if(dist<=tLow){ t=0; }
+    else if(dist>=tHigh){ t=1; }
+    else { var tt=(dist-tLow)/(tHigh-tLow); t=tt*tt*(3-2*tt); }
 
-    for(var i=0;i<sd.length;i+=4){
-      var r=sd[i],g=sd[i+1],b=sd[i+2],a=sd[i+3];
-      var dist=Math.sqrt((r-br)*(r-br)+(g-bg)*(g-bg)+(b-bb)*(b-bb));
-
-      if(isFill){
-        // 塗り替えモード: 背景色に近いほど塗り替え色に近づける
-        var ratio;
-        if(dist<=tLow){ ratio=1; }
-        else if(dist>=tHigh){ ratio=0; }
-        else {
-          var t=(dist-tLow)/(tHigh-tLow);
-          ratio=1-(t*t*(3-2*t));
-        }
-        od[i]  =Math.round(r+(fr_-r)*ratio);
-        od[i+1]=Math.round(g+(fg_-g)*ratio);
-        od[i+2]=Math.round(b+(fb_-b)*ratio);
-        od[i+3]=a;
-      } else {
-        // 透過モード
-        var alpha;
-        if(dist<=tLow){ alpha=0; }
-        else if(dist>=tHigh){ alpha=a; }
-        else {
-          var t=(dist-tLow)/(tHigh-tLow);
-          alpha=Math.round(t*t*(3-2*t)*a);
-        }
-        var fr=r, fg=g, fb=b;
-        if(spillAmt>0&&alpha>0&&alpha<a){
-          var blend=spillAmt*(1-alpha/255);
-          var lum=0.299*r+0.587*g+0.114*b;
-          fr=Math.round(r+(lum-r)*blend);
-          fg=Math.round(g+(lum-g)*blend);
-          fb=Math.round(b+(lum-b)*blend);
-        }
-        od[i]=fr; od[i+1]=fg; od[i+2]=fb; od[i+3]=alpha;
+    if(outMode==='fill'){
+      // t=0: 完全塗り替え色, t=1: 元の色
+      od[i]  =Math.round(fillR+(r-fillR)*t);
+      od[i+1]=Math.round(fillG+(g-fillG)*t);
+      od[i+2]=Math.round(fillB+(b-fillB)*t);
+      od[i+3]=a;
+    } else {
+      // 透過モード
+      var alpha=Math.round(t*a);
+      var fr=r,fg=g,fb=b;
+      if(spillAmt>0&&alpha>0&&alpha<a){
+        var blend=spillAmt*(1-alpha/255);
+        var lum=0.299*r+0.587*g+0.114*b;
+        fr=Math.round(r+(lum-r)*blend);
+        fg=Math.round(g+(lum-g)*blend);
+        fb=Math.round(b+(lum-b)*blend);
       }
+      od[i]=fr; od[i+1]=fg; od[i+2]=fb; od[i+3]=alpha;
     }
+  }
 
-    lastResult=out;
-    document.getElementById('previewCanvas').getContext('2d').putImageData(out,0,0);
-    document.getElementById('dlBtn').disabled=false;
-    document.getElementById('status').textContent=imgW+'×'+imgH+'px — '+(Date.now()-t0)+'ms';
-  },10);
+  lastResult=out;
+  document.getElementById('cv').getContext('2d').putImageData(out,0,0);
+  document.getElementById('st').textContent=imgW+'×'+imgH+'px — '+(Date.now()-t0)+'ms';
 }
 
-// ---- 保存 ----
+// 保存
 function doDl(){
   if(!lastResult) return;
   var out=document.createElement('canvas');
@@ -402,22 +350,6 @@ function doDl(){
   document.getElementById('saveImg').src=url;
   document.getElementById('saveOverlay').className='show';
 }
-
-// ---- ユーティリティ ----
-function hexToRgb(hex){
-  return {
-    r:parseInt(hex.slice(1,3),16),
-    g:parseInt(hex.slice(3,5),16),
-    b:parseInt(hex.slice(5,7),16)
-  };
-}
-function rgbToHex(r,g,b){
-  return '#'+[r,g,b].map(function(v){return v.toString(16).padStart(2,'0');}).join('');
-}
-
-// 初期スウォッチ
-document.getElementById('bgSwatchEl').style.background='#000000';
-document.getElementById('fillSwatchEl').style.background='#ffffff';
 </script>
 </body>
 </html>
