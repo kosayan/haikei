@@ -129,6 +129,15 @@ canvas { display: block; width: 100%; height: auto; cursor: crosshair; touch-act
       <div class="hex" id="fillHex">#FFFFFF</div>
     </div>
 
+    <!-- 範囲 -->
+    <div class="row">
+      <div class="lbl">範囲</div>
+      <div class="btns">
+        <button class="btn on" id="sAdjacent" onclick="setScope('adjacent')">隣接のみ</button>
+        <button class="btn"    id="sGlobal"   onclick="setScope('global')">画像全体</button>
+      </div>
+    </div>
+
     <!-- 許容誤差 -->
     <div class="row">
       <div class="lbl">許容誤差</div>
@@ -169,6 +178,7 @@ canvas { display: block; width: 100%; height: auto; cursor: crosshair; touch-act
 var W=0, H=0, srcImg=null;
 var pixels=null;   // 現在の画像データ(Uint8ClampedArray) 編集対象
 var mode='transp'; // transp | fill | restore
+var scope='adjacent'; // adjacent | global
 var fillR=255, fillG=255, fillB=255;
 var stack=[];
 
@@ -239,12 +249,6 @@ function fill(sx,sy){
   if(stack.length>10) stack.shift();
   document.getElementById('bUndo').disabled=false;
 
-  var visited=new Uint8Array(W*H);
-  var qx=new Int32Array(W*H);
-  var qy=new Int32Array(W*H);
-  var head=0, tail=0;
-  qx[tail]=sx; qy[tail]=sy; tail++;
-  visited[sy*W+sx]=1;
   var count=0;
   var t0=Date.now();
 
@@ -254,14 +258,7 @@ function fill(sx,sy){
     srcData=document.getElementById('src').getContext('2d').getImageData(0,0,W,H).data;
   }
 
-  while(head<tail){
-    var cx=qx[head], cy=qy[head]; head++;
-    var idx=cy*W+cx;
-    var pi=idx*4;
-    var dr=pixels[pi]-tr, dg=pixels[pi+1]-tg, db=pixels[pi+2]-tb;
-    if(dr*dr+dg*dg+db*db>tolSq) continue;
-
-    // 処理適用
+  function applyAt(pi){
     if(mode==='transp'){
       pixels[pi+3]=0;
     } else if(mode==='fill'){
@@ -270,13 +267,42 @@ function fill(sx,sy){
       pixels[pi]=srcData[pi]; pixels[pi+1]=srcData[pi+1];
       pixels[pi+2]=srcData[pi+2]; pixels[pi+3]=srcData[pi+3];
     }
-    count++;
+  }
 
-    var nx,ny,ni;
-    if(cx>0)   { nx=cx-1; ny=cy;   ni=ny*W+nx; if(!visited[ni]){visited[ni]=1; qx[tail]=nx;qy[tail]=ny;tail++;} }
-    if(cx<W-1) { nx=cx+1; ny=cy;   ni=ny*W+nx; if(!visited[ni]){visited[ni]=1; qx[tail]=nx;qy[tail]=ny;tail++;} }
-    if(cy>0)   { nx=cx;   ny=cy-1; ni=ny*W+nx; if(!visited[ni]){visited[ni]=1; qx[tail]=nx;qy[tail]=ny;tail++;} }
-    if(cy<H-1) { nx=cx;   ny=cy+1; ni=ny*W+nx; if(!visited[ni]){visited[ni]=1; qx[tail]=nx;qy[tail]=ny;tail++;} }
+  if(scope==='global'){
+    // 画像全体を1回スキャンして近似色を全部処理
+    for(var idx=0; idx<W*H; idx++){
+      var pi=idx*4;
+      var dr=pixels[pi]-tr, dg=pixels[pi+1]-tg, db=pixels[pi+2]-tb;
+      if(dr*dr+dg*dg+db*db>tolSq) continue;
+      applyAt(pi);
+      count++;
+    }
+  } else {
+    // 隣接のみ: フラッドフィル(BFS)
+    var visited=new Uint8Array(W*H);
+    var qx=new Int32Array(W*H);
+    var qy=new Int32Array(W*H);
+    var head=0, tail=0;
+    qx[tail]=sx; qy[tail]=sy; tail++;
+    visited[sy*W+sx]=1;
+
+    while(head<tail){
+      var cx=qx[head], cy=qy[head]; head++;
+      var idx2=cy*W+cx;
+      var pi2=idx2*4;
+      var dr2=pixels[pi2]-tr, dg2=pixels[pi2+1]-tg, db2=pixels[pi2+2]-tb;
+      if(dr2*dr2+dg2*dg2+db2*db2>tolSq) continue;
+
+      applyAt(pi2);
+      count++;
+
+      var nx,ny,ni;
+      if(cx>0)   { nx=cx-1; ny=cy;   ni=ny*W+nx; if(!visited[ni]){visited[ni]=1; qx[tail]=nx;qy[tail]=ny;tail++;} }
+      if(cx<W-1) { nx=cx+1; ny=cy;   ni=ny*W+nx; if(!visited[ni]){visited[ni]=1; qx[tail]=nx;qy[tail]=ny;tail++;} }
+      if(cy>0)   { nx=cx;   ny=cy-1; ni=ny*W+nx; if(!visited[ni]){visited[ni]=1; qx[tail]=nx;qy[tail]=ny;tail++;} }
+      if(cy<H-1) { nx=cx;   ny=cy+1; ni=ny*W+nx; if(!visited[ni]){visited[ni]=1; qx[tail]=nx;qy[tail]=ny;tail++;} }
+    }
   }
 
   document.getElementById('st').textContent=count.toLocaleString()+' px — '+(Date.now()-t0)+'ms';
@@ -298,6 +324,12 @@ function setMode(m){
   document.getElementById('mFill').className='btn'+(m==='fill'?' on':'');
   document.getElementById('mRestore').className='btn'+(m==='restore'?' on':'');
   document.getElementById('fillRow').style.display=(m==='fill'?'flex':'none');
+}
+
+function setScope(s){
+  scope=s;
+  document.getElementById('sAdjacent').className='btn'+(s==='adjacent'?' on':'');
+  document.getElementById('sGlobal').className='btn'+(s==='global'?' on':'');
 }
 
 document.getElementById('fillPicker').oninput=function(){
